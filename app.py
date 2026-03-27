@@ -5,21 +5,27 @@ import joblib
 from sklearn.preprocessing import StandardScaler
 from datetime import datetime
 
-# Firestore integration
-import firebase_admin
-from firebase_admin import credentials, firestore
+# Firestore integration (optional, skip if not installed)
+try:
+    import firebase_admin
+    from firebase_admin import credentials, firestore
+except ModuleNotFoundError:
+    firebase_admin = None
+    credentials = None
+    firestore = None
+
 from pathlib import Path
 
 st.set_page_config(page_title='HDP Longitudinal Predictor', layout='wide')
 
 # Firebase service setup
 firebase_service_account_path = Path('firebase-service-account.json')
-if firebase_service_account_path.exists():
+db = None
+if firebase_admin and firestore and firebase_service_account_path.exists():
     cred = credentials.Certificate(str(firebase_service_account_path))
     firebase_admin.initialize_app(cred)
     db = firestore.client()
-else:
-    db = None
+
 
 PASSWORD = 'health123'
 
