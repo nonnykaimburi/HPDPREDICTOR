@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.layers import Input, LSTM, Dense, Dropout, Bidirectional
-from tensorflow.keras.callbacks import EarlyStopping
-import tensorflow as tf
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.multioutput import MultiOutputRegressor
+from sklearn.ensemble import RandomForestRegressor
+import joblib
 import os
 
 np.random.seed(42)
@@ -62,24 +62,10 @@ def generate_synthetic_longitudinal(n_patients=2500, seq_len=20):
 
 
 def build_model(seq_len=20, n_features=7):
-    inp = Input(shape=(seq_len, n_features), name='patient_sequence')
-    x = Bidirectional(LSTM(64, return_sequences=True, activation='tanh'))(inp)
-    x = Dropout(0.22)(x)
-    x = Bidirectional(LSTM(32, activation='tanh'))(x)
-    x = Dense(64, activation='relu')(x)
-    x = Dropout(0.2)(x)
-
-    out_risk = Dense(1, activation='sigmoid', name='risk')(x)
-    out_time = Dense(1, activation='relu', name='time_to_event')(x)
-
-    model = Model(inputs=inp, outputs=[out_risk, out_time])
-    model.compile(
-        optimizer='adam',
-        loss={'risk': 'binary_crossentropy', 'time_to_event': 'mse'},
-        loss_weights={'risk': 1.0, 'time_to_event': 0.75},
-        metrics={'risk': ['accuracy'], 'time_to_event': ['mse']}
-    )
-    return model
+    # Use RandomForest for classification and regression
+    clf = RandomForestClassifier(n_estimators=100, random_state=42)
+    reg = RandomForestRegressor(n_estimators=100, random_state=42)
+    return clf, reg
 
 
 def main():
@@ -92,33 +78,34 @@ def main():
     scaler = StandardScaler().fit(X_2d)
     X_scaled = scaler.transform(X_2d).reshape(n_patients, T, n_features)
 
+    # Flatten for sklearn
+    X_flat = X_scaled.reshape(n_patients, -1)  # (n_patients, seq_len * n_features)
+
     X_trainval, X_test, y_class_trainval, y_class_test, y_time_trainval, y_time_test = train_test_split(
-        X_scaled, y_class, y_time, test_size=0.2, random_state=42, stratify=y_class)
+        X_flat, y_class, y_time, test_size=0.2, random_state=42, stratify=y_class)
 
     X_train, X_val, y_class_train, y_class_val, y_time_train, y_time_val = train_test_split(
         X_trainval, y_class_trainval, y_time_trainval, test_size=0.125, random_state=42, stratify=y_class_trainval)
     # 0.125 of 80% is 10% => 70/20/10
 
-    model = build_model(seq_len=seq_len, n_features=n_features)
-    print(model.summary())
+    clf, reg = build_model(seq_len=seq_len, n_features=n_features)
+    print("Training classifier...")
+    clf.fit(X_train, y_class_train)
+    print("Training regressor...")
+    reg.fit(X_train, y_time_train)
 
-    es = EarlyStopping(monitor='val_loss', patience=12, restore_best_weights=True)
-
-    history = model.fit(
-        X_train,
-        {'risk': y_class_train, 'time_to_event': y_time_train},
-        validation_data=(X_val, {'risk': y_class_val, 'time_to_event': y_time_val}),
-        epochs=90,
-        batch_size=64,
-        callbacks=[es],
-        verbose=2
-    )
-
-    results = model.evaluate(X_test, {'risk': y_class_test, 'time_to_event': y_time_test}, verbose=2)
-    print('Test set results:', results)
+    # Evaluate
+    from sklearn.metrics import accuracy_score, mean_squared_error
+    pred_class = clf.predict(X_test)
+    pred_time = reg.predict(X_test)
+    acc = accuracy_score(y_class_test, pred_class)
+    mse = mean_squared_error(y_time_test, pred_time)
+    print(f'Test accuracy: {acc:.4f}')
+    print(f'Test MSE: {mse:.4f}')
 
     os.makedirs('artifacts', exist_ok=True)
-    model.save('artifacts/hdp_lstm_model.keras')
+    joblib.dump(clf, 'artifacts/risk_classifier.pkl')
+    joblib.dump(reg, 'artifacts/time_regressor.pkl')
     np.save('artifacts/risk_scaler_mean.npy', scaler.mean_)
     np.save('artifacts/risk_scaler_scale.npy', scaler.scale_)
 

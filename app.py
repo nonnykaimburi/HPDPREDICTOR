@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-from tensorflow.keras.models import load_model
+import joblib
 from sklearn.preprocessing import StandardScaler
 from datetime import datetime
 
@@ -121,7 +121,8 @@ if st.session_state['enrollment_mode']:
             input_data = np.vstack([sbp_seq, dbp_seq, map_seq, bmi_seq, weight_seq, oliguria, proteinuria]).T
             input_model = input_data.reshape(1, seq_len, 7)
             
-            model = load_model('artifacts/hdp_lstm_model.h5')
+            clf = joblib.load('artifacts/risk_classifier.pkl')
+            reg = joblib.load('artifacts/time_regressor.pkl')
             mean_ = np.load('artifacts/risk_scaler_mean.npy')
             scale_ = np.load('artifacts/risk_scaler_scale.npy')
             scaler = StandardScaler()
@@ -131,9 +132,9 @@ if st.session_state['enrollment_mode']:
             scaler.n_features_in_ = 7
             
             input_scaled = scaler.transform(input_model.reshape(-1, 7)).reshape(1, seq_len, 7)
-            pred_risk, pred_time = model.predict(input_scaled, verbose=0)
-            pred_risk = float(pred_risk[0, 0])
-            pred_time = float(pred_time[0, 0])
+            input_flat = input_scaled.reshape(1, -1)  # Flatten for sklearn
+            pred_risk = clf.predict_proba(input_flat)[0, 1]  # Probability of positive class
+            pred_time = reg.predict(input_flat)[0]
             
             st.session_state['pred_risk'] = pred_risk
             st.session_state['pred_time'] = pred_time
@@ -277,7 +278,8 @@ else:
                 input_data = np.vstack([sbp_seq, dbp_seq, map_seq, bmi_seq, weight_seq, oliguria, proteinuria]).T
                 input_model = input_data.reshape(1, seq_len, 7)
                 
-                model = load_model('artifacts/hdp_lstm_model.h5')
+                clf = joblib.load('artifacts/risk_classifier.pkl')
+                reg = joblib.load('artifacts/time_regressor.pkl')
                 mean_ = np.load('artifacts/risk_scaler_mean.npy')
                 scale_ = np.load('artifacts/risk_scaler_scale.npy')
                 scaler = StandardScaler()
@@ -287,9 +289,9 @@ else:
                 scaler.n_features_in_ = 7
                 
                 input_scaled = scaler.transform(input_model.reshape(-1, 7)).reshape(1, seq_len, 7)
-                pred_risk, pred_time = model.predict(input_scaled, verbose=0)
-                pred_risk = float(pred_risk[0, 0])
-                pred_time = float(pred_time[0, 0])
+                input_flat = input_scaled.reshape(1, -1)  # Flatten for sklearn
+                pred_risk = clf.predict_proba(input_flat)[0, 1]  # Probability of positive class
+                pred_time = reg.predict(input_flat)[0]
                 
                 st.metric('HDP risk', f'{pred_risk*100:.1f}%')
                 st.metric('Time to event (weeks)', f'{pred_time:.1f}')
