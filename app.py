@@ -240,9 +240,13 @@ if st.session_state['enrollment_mode']:
         
         st.subheader(f"Patient: {selected_patient['name']}")
         
-        visit_labels = [v['label'] for v in selected_patient['visits']]
+        visit_labels = [v.get('label', f"Visit {i+1}") for i, v in enumerate(selected_patient.get('visits', []))]
+        if not visit_labels:
+            st.warning('No visits available. Enter at least one visit first.')
+            st.stop()
+
         selected_visit_label = st.selectbox('Choose visit history entry:', visit_labels)
-        visit_record = next(v for v in selected_patient['visits'] if v['label'] == selected_visit_label)
+        visit_record = next((v for v in selected_patient['visits'] if v.get('label') == selected_visit_label), selected_patient['visits'][0])
         
         history_col, entry_col = st.columns([1, 2])
         
@@ -304,10 +308,17 @@ if st.session_state['enrollment_mode']:
                             'date': datetime.now().strftime('%Y-%m-%d'),
                             'sbp': int(new_sbp),
                             'dbp': int(new_dbp),
-                            'risk': pred_risk,
+                            'risk': float(pred_risk),
                             'notes': adv_note
                         })
+                        # Persist updated patient list in session state for multi-visit patients
+                        st.session_state['patients'] = [
+                            (p if p['id'] != selected_patient['id'] else selected_patient)
+                            for p in st.session_state['patients']
+                        ]
+                        st.session_state['selected_patient'] = selected_patient['id']
                         st.success('New visit saved to patient history.')
+                        st.success('✅ Visit added. Select another visit to verify data is shown.')
                 
                 with confirm_col2:
                     if st.button('❌ Cancel', key='cancel_save_visit'):
