@@ -136,18 +136,30 @@ if page == "System Architecture":
     """)
 
     st.subheader("System Flow Chart")
-    st.markdown("""
-    ```mermaid
-    graph TD
-        A[User Inputs Patient Data] --> B[Data Preprocessing]
-        B --> C[AI Model Prediction]
-        C --> D[Risk & Time-to-Event Output]
-        D --> E[Store in Database]
-        E --> F[Display Results & Recommendations]
-        G[Trained Model] --> C
-        H[Firebase Database] --> E
-    ```
-    """)
+    st.graphviz_chart(
+        """
+        digraph G {
+            rankdir=LR;
+            node [shape=box, style=filled, fillcolor="#0e1117", fontcolor=white];
+            A [label="User Inputs Patient Data"];
+            B [label="Data Preprocessing"];
+            C [label="AI Model Prediction"];
+            D [label="Risk & Time-to-Event Output"];
+            E [label="Store in Database"];
+            F [label="Display Results & Recommendations"];
+            G [label="Trained Model", shape=ellipse, fillcolor="#0a437c"];
+            H [label="Firebase Database", shape=cylinder, fillcolor="#0a437c"];
+
+            A -> B;
+            B -> C;
+            C -> D;
+            D -> E;
+            E -> F;
+            G -> C;
+            H -> E;
+        }
+        """
+    )
 
     st.subheader("Detailed Architecture")
     st.markdown("""
