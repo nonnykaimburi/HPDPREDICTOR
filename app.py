@@ -393,19 +393,23 @@ else:  # Dashboard page
         st.write('Select patients below:')
         
         search_term = st.text_input('Search patients', '', placeholder='Name or ID', key='patient_search')
-        
+
         filtered_patients = [p for p in st.session_state['patients'] 
-                            if search_term.lower() in p['name'].lower() or search_term.lower() in p['id'].lower()]
+                             if search_term.lower() in p['name'].lower() or search_term.lower() in p['id'].lower()]
 
-            if filtered_patients:
-                patient_ids = [p['id'] for p in filtered_patients]
-                patient_names = {p['id']: p['name'] for p in filtered_patients}
-                current_index = patient_ids.index(st.session_state['selected_patient']) if st.session_state['selected_patient'] in patient_ids else 0
+        if filtered_patients:
+            patient_ids = [p['id'] for p in filtered_patients]
+            patient_names = {p['id']: p['name'] for p in filtered_patients}
+            current_index = patient_ids.index(st.session_state['selected_patient']) if st.session_state['selected_patient'] in patient_ids else 0
 
-                chosen_id = st.selectbox('Choose patient', patient_ids, index=current_index,
-                                         format_func=lambda x: patient_names.get(x, x))
-                st.session_state['selected_patient'] = chosen_id
-            else:
+            chosen_id = st.selectbox('Choose patient', patient_ids, index=current_index,
+                                     format_func=lambda x: patient_names.get(x, x))
+            st.session_state['selected_patient'] = chosen_id
+        else:
+            st.info('No patients match your search.')
+
+        st.markdown('---')
+        if st.button('🗑️ Remove selected patient', use_container_width=True):
             if st.session_state['selected_patient'] is not None:
                 before = len(st.session_state['patients'])
                 st.session_state['patients'] = [p for p in st.session_state['patients'] if p['id'] != st.session_state['selected_patient']]
@@ -415,8 +419,6 @@ else:  # Dashboard page
                         st.session_state['selected_patient'] = st.session_state['patients'][0]['id']
                     else:
                         st.session_state['selected_patient'] = None
-        
-        st.markdown('---')
         selected_patient = next((p for p in st.session_state['patients'] if p['id'] == st.session_state['selected_patient']), None)
         if selected_patient:
             st.write('**Selected:**', selected_patient['name'])
