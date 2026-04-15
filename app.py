@@ -124,7 +124,7 @@ def seed_demo_patients_to_firestore():
     demo_patients = [
         {
             'id': 'p001',
-            'name': 'Amina Adamu',
+            'name': 'Amina Olufemi',
             'dob': '1995-07-22',
             'visits': [
                 {'label': 'Visit 1', 'date': '2026-01-10', 'sbp': 112, 'dbp': 72, 'risk': 0.17, 'notes': 'Normal monitoring.'},
@@ -134,7 +134,7 @@ def seed_demo_patients_to_firestore():
         },
         {
             'id': 'p002',
-            'name': 'Bintu Kamara',
+            'name': 'Zola Nkosi',
             'dob': '1990-03-05',
             'visits': [
                 {'label': 'Visit 1', 'date': '2026-01-20', 'sbp': 130, 'dbp': 84, 'risk': 0.43, 'notes': 'Pre-hypertension alert.'},
@@ -145,7 +145,7 @@ def seed_demo_patients_to_firestore():
         },
         {
             'id': 'p003',
-            'name': 'Chiamaka Nwosu',
+            'name': 'Fatima Diallo',
             'dob': '1998-11-28',
             'visits': [
                 {'label': 'Visit 1', 'date': '2026-01-05', 'sbp': 104, 'dbp': 66, 'risk': 0.08, 'notes': 'Healthy baseline.'},
@@ -155,7 +155,7 @@ def seed_demo_patients_to_firestore():
         },
         {
             'id': 'p004',
-            'name': 'Zainab Hussein',
+            'name': 'Makena Odinga',
             'dob': '1992-05-14',
             'visits': [
                 {'label': 'Visit 1', 'date': '2026-01-12', 'sbp': 125, 'dbp': 81, 'risk': 0.35, 'notes': 'Mild elevation.'},
@@ -167,7 +167,7 @@ def seed_demo_patients_to_firestore():
         },
         {
             'id': 'p005',
-            'name': 'Fatima Okafor',
+            'name': 'Adaeze Eze',
             'dob': '1996-09-03',
             'visits': [
                 {'label': 'Visit 1', 'date': '2026-01-18', 'sbp': 110, 'dbp': 70, 'risk': 0.13, 'notes': 'Initial assessment.'},
@@ -177,7 +177,7 @@ def seed_demo_patients_to_firestore():
         },
         {
             'id': 'p006',
-            'name': 'Aisha Mohammed',
+            'name': 'Lindiwe Dlamini',
             'dob': '1994-12-11',
             'visits': [
                 {'label': 'Visit 1', 'date': '2026-01-15', 'sbp': 118, 'dbp': 75, 'risk': 0.22, 'notes': 'Borderline hypertension.'},
@@ -188,7 +188,7 @@ def seed_demo_patients_to_firestore():
         },
         {
             'id': 'p007',
-            'name': 'Leila Suleiman',
+            'name': 'Safiya El-Masri',
             'dob': '1993-02-20',
             'visits': [
                 {'label': 'Visit 1', 'date': '2026-01-22', 'sbp': 106, 'dbp': 68, 'risk': 0.11, 'notes': 'Normal range.'},
@@ -198,7 +198,7 @@ def seed_demo_patients_to_firestore():
         },
         {
             'id': 'p008',
-            'name': 'Grace Mensah',
+            'name': 'Asha Mwangi',
             'dob': '1991-06-07',
             'visits': [
                 {'label': 'Visit 1', 'date': '2026-01-28', 'sbp': 140, 'dbp': 92, 'risk': 0.65, 'notes': 'Severe hypertension.'},
@@ -210,7 +210,7 @@ def seed_demo_patients_to_firestore():
         },
         {
             'id': 'p009',
-            'name': 'Njeri Kamau',
+            'name': 'Naledi Modise',
             'dob': '1997-08-16',
             'visits': [
                 {'label': 'Visit 1', 'date': '2026-02-01', 'sbp': 113, 'dbp': 73, 'risk': 0.19, 'notes': 'Early pregnancy assessment.'},
@@ -221,7 +221,7 @@ def seed_demo_patients_to_firestore():
         },
         {
             'id': 'p010',
-            'name': 'Miriam Kipchoge',
+            'name': 'Chiamaka Okonkwo',
             'dob': '1989-10-30',
             'visits': [
                 {'label': 'Visit 1', 'date': '2026-02-05', 'sbp': 108, 'dbp': 69, 'risk': 0.13, 'notes': 'Excellent baseline.'},
@@ -400,7 +400,7 @@ else:  # Dashboard page
             st.error('⚠️ Firebase is not initialized. Patient data will not be persisted across sessions.')
 
     if not st.session_state['logged_in']:
-        st.title('🏥 HDP PREDICTOR')
+        st.title('HDP PREDICTOR')
         st.markdown('### Hypertensive Disorder of Pregnancy Risk Assessment')
         with st.form('login_form'):
             st.write('### User Login')
@@ -417,7 +417,7 @@ else:  # Dashboard page
         st.stop()
 
     st.markdown("<br><br>", unsafe_allow_html=True)  # Move title down
-    st.title('🏥 HDP PREDICTOR')
+    st.title('HDP PREDICTOR')
 
     # Session timeout check (60 minutes of inactivity)
     if st.session_state['logged_in']:
