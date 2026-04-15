@@ -589,24 +589,192 @@ else:  # Dashboard page
                 st.rerun()
 
     if st.session_state['enrollment_mode']:
+        # ENROLLMENT MODE: Show ONLY the enrollment form
         st.markdown('---')
         st.subheader('✏️ Enroll New Patient & Initial Visit')
+        st.markdown('Fill in the patient information and initial visit details below.')
+        
+        # Initialize empty form fields for enrollment
+        if 'enroll_name_val' not in st.session_state:
+            st.session_state['enroll_name_val'] = ''
+        if 'enroll_dob_val' not in st.session_state:
+            st.session_state['enroll_dob_val'] = ''
+        if 'enroll_age_val' not in st.session_state:
+            st.session_state['enroll_age_val'] = 18
+        if 'enroll_notes_patient_val' not in st.session_state:
+            st.session_state['enroll_notes_patient_val'] = ''
+        if 'visit_sbp_val' not in st.session_state:
+            st.session_state['visit_sbp_val'] = 100
+        if 'visit_dbp_val' not in st.session_state:
+            st.session_state['visit_dbp_val'] = 60
+        if 'visit_bmi_val' not in st.session_state:
+            st.session_state['visit_bmi_val'] = 22.0
+        if 'visit_notes_val' not in st.session_state:
+            st.session_state['visit_notes_val'] = ''
         
         enroll_left, enroll_right = st.columns([1, 2])
         
         with enroll_left:
             st.write('### Patient Information')
-            enroll_name = st.text_input('Full name', key='enroll_name', on_change=lambda: st.session_state.update({'unsaved_changes': True}))
-            enroll_dob = st.text_input('Date of birth (YYYY-MM-DD)', key='enroll_dob', placeholder='1990-03-15', on_change=lambda: st.session_state.update({'unsaved_changes': True}))
-            enroll_age = st.number_input('Age', min_value=15, max_value=50, value=28, key='enroll_age', on_change=lambda: st.session_state.update({'unsaved_changes': True}))
-            enroll_notes_patient = st.text_area('Patient history / notes', '', key='enroll_notes_patient', height=120, on_change=lambda: st.session_state.update({'unsaved_changes': True}))
+            enroll_name = st.text_input('Full name', value=st.session_state['enroll_name_val'], key='enroll_name_input', 
+                                       on_change=lambda: st.session_state.update({'enroll_name_val': st.session_state.get('enroll_name_input', ''), 'unsaved_changes': True}))
+            enroll_dob = st.text_input('Date of birth (YYYY-MM-DD)', value=st.session_state['enroll_dob_val'], key='enroll_dob_input', 
+                                      on_change=lambda: st.session_state.update({'enroll_dob_val': st.session_state.get('enroll_dob_input', ''), 'unsaved_changes': True}))
+            enroll_age = st.number_input('Age', min_value=15, max_value=50, value=int(st.session_state['enroll_age_val']), key='enroll_age_input',
+                                        on_change=lambda: st.session_state.update({'enroll_age_val': st.session_state.get('enroll_age_input', 18), 'unsaved_changes': True}))
+            enroll_notes_patient = st.text_area('Patient history / notes', value=st.session_state['enroll_notes_patient_val'], key='enroll_notes_patient_input', 
+                                               height=120, on_change=lambda: st.session_state.update({'enroll_notes_patient_val': st.session_state.get('enroll_notes_patient_input', ''), 'unsaved_changes': True}))
         
         with enroll_right:
             st.write('### Initial Visit (Visit 1)')
-            visit_sbp = st.number_input('SBP', value=115, min_value=80, max_value=220, key='visit_sbp', on_change=lambda: st.session_state.update({'unsaved_changes': True}))
-            visit_dbp = st.number_input('DBP', value=75, min_value=50, max_value=150, key='visit_dbp', on_change=lambda: st.session_state.update({'unsaved_changes': True}))
-            visit_bmi = st.number_input('BMI', value=26.0, min_value=16.0, max_value=45.0, key='visit_bmi', on_change=lambda: st.session_state.update({'unsaved_changes': True}))
-            visit_notes = st.text_area('Clinician notes for this visit', '', key='visit_notes', height=120, on_change=lambda: st.session_state.update({'unsaved_changes': True}))
+            visit_sbp = st.number_input('SBP', value=int(st.session_state['visit_sbp_val']), min_value=80, max_value=220, key='visit_sbp_input',
+                                       on_change=lambda: st.session_state.update({'visit_sbp_val': st.session_state.get('visit_sbp_input', 100), 'unsaved_changes': True}))
+            visit_dbp = st.number_input('DBP', value=int(st.session_state['visit_dbp_val']), min_value=50, max_value=150, key='visit_dbp_input',
+                                       on_change=lambda: st.session_state.update({'visit_dbp_val': st.session_state.get('visit_dbp_input', 60), 'unsaved_changes': True}))
+            visit_bmi = st.number_input('BMI', value=float(st.session_state['visit_bmi_val']), min_value=16.0, max_value=45.0, key='visit_bmi_input',
+                                       on_change=lambda: st.session_state.update({'visit_bmi_val': st.session_state.get('visit_bmi_input', 22.0), 'unsaved_changes': True}))
+            visit_notes = st.text_area('Clinician notes for this visit', value=st.session_state['visit_notes_val'], key='visit_notes_input', 
+                                      height=120, on_change=lambda: st.session_state.update({'visit_notes_val': st.session_state.get('visit_notes_input', ''), 'unsaved_changes': True}))
+            
+            if st.button('🔍 Predict & Review', use_container_width=True):
+                st.session_state['unsaved_changes'] = True
+                
+                with st.spinner('🔄 Calculating risk prediction...'):
+                    # Create cache key from current inputs to avoid recalculating for same data
+                    current_key = (visit_sbp, visit_dbp, visit_bmi)
+                    
+                    # Check if we already predicted for these exact values
+                    if st.session_state['cached_prediction_key'] == current_key and st.session_state['cached_pred_risk'] is not None:
+                        # Reuse cached prediction
+                        pred_risk = st.session_state['cached_pred_risk']
+                        pred_time = st.session_state['cached_pred_time']
+                    else:
+                        # Generate new prediction (only once per unique input set)
+                        np.random.seed(42)  # Fixed seed for reproducibility
+                        seq_len = 20
+                        sbp_seq = np.linspace(visit_sbp - 12, visit_sbp, seq_len) + np.random.normal(0, 2, seq_len)
+                        dbp_seq = np.linspace(visit_dbp - 8, visit_dbp, seq_len) + np.random.normal(0, 1.5, seq_len)
+                        map_seq = 0.4 * sbp_seq + 0.6 * dbp_seq
+                        bmi_seq = np.full(seq_len, visit_bmi) + np.linspace(0, 1.2, seq_len)
+                        weight_seq = np.linspace(0, 2.0, seq_len)
+                        oliguria = np.where(np.random.rand(seq_len) < 0.05, 1, 0)
+                        proteinuria = np.where(np.random.rand(seq_len) < 0.03, 1, 0)
+                        
+                        input_data = np.vstack([sbp_seq, dbp_seq, map_seq, bmi_seq, weight_seq, oliguria, proteinuria]).T
+                        input_model = input_data.reshape(1, seq_len, 7)
+                        
+                        clf = joblib.load('artifacts/risk_classifier.pkl')
+                        reg = joblib.load('artifacts/time_regressor.pkl')
+                        mean_ = np.load('artifacts/risk_scaler_mean.npy')
+                        scale_ = np.load('artifacts/risk_scaler_scale.npy')
+                        scaler = StandardScaler()
+                        scaler.mean_ = mean_
+                        scaler.scale_ = scale_
+                        scaler.var_ = scale_**2
+                        scaler.n_features_in_ = 7
+                        
+                        input_scaled = scaler.transform(input_model.reshape(-1, 7)).reshape(1, seq_len, 7)
+                        input_flat = input_scaled.reshape(1, -1)  # Flatten for sklearn
+                        pred_risk = clf.predict_proba(input_flat)[0, 1]  # Probability of positive class
+                        pred_time = reg.predict(input_flat)[0]
+                        
+                        # Cache the prediction results
+                        st.session_state['cached_prediction_key'] = current_key
+                        st.session_state['cached_pred_risk'] = pred_risk
+                        st.session_state['cached_pred_time'] = pred_time
+                    
+                    # Store predictions in session for display
+                    st.session_state['pred_risk'] = pred_risk
+                    st.session_state['pred_time'] = pred_time
+        
+        st.markdown('---')
+        
+        if 'pred_risk' in st.session_state:
+            st.write('### 📊 Prediction Result')
+            st.info('💡 **Tip**: This prediction will remain consistent for these same input values. If you change SBP, DBP, or BMI, a new prediction will be generated.')
+            col_risk, col_time = st.columns(2)
+            with col_risk:
+                st.metric('HDP Risk', f"{st.session_state['pred_risk']*100:.1f}%")
+            with col_time:
+                st.metric('Time to Event (weeks)', f"{st.session_state['pred_time']:.1f}")
+            
+            st.markdown('---')
+            st.write('### ✅ Confirm Patient Details')
+            
+            confirm_col_info, confirm_col_visit = st.columns([1, 1])
+            with confirm_col_info:
+                st.write('**Patient:**')
+                st.write(f"- Name: {enroll_name}")
+                st.write(f"- DOB: {enroll_dob}")
+                st.write(f"- Age: {enroll_age}")
+            with confirm_col_visit:
+                st.write('**Visit 1:**')
+                st.write(f"- SBP/DBP: {visit_sbp}/{visit_dbp}")
+                st.write(f"- BMI: {visit_bmi}")
+                st.write(f"- Risk: {st.session_state['pred_risk']*100:.1f}%")
+            
+            if st.warning('Are you sure you want to save this new patient?'):
+                pass
+            
+            save_col1, save_col2 = st.columns(2)
+            with save_col1:
+                if st.button('✅ Confirm & Save', use_container_width=True):
+                    if not enroll_name or not enroll_dob:
+                        st.error('Name and DOB required.')
+                    else:
+                        new_id = f"p{100 + len(st.session_state['patients']) + 1:03d}"
+                        new_patient = {
+                            'id': new_id,
+                            'name': enroll_name,
+                            'dob': enroll_dob,
+                            'visits': [{
+                                'label': 'Visit 1',
+                                'date': datetime.now().strftime('%Y-%m-%d'),
+                                'sbp': int(visit_sbp),
+                                'dbp': int(visit_dbp),
+                                'risk': float(st.session_state['pred_risk']),
+                                'notes': visit_notes or 'Initial visit'
+                            }]
+                        }
+                        st.session_state['patients'].append(new_patient)
+                        if db:
+                            save_patient_to_firestore(new_patient)
+                            st.session_state['last_saved_visit'] = datetime.now()
+                            st.session_state['unsaved_changes'] = False
+                            st.success(f'✅ Patient {enroll_name} saved to Firebase successfully!')
+                            st.info('⏳ Refreshing data in 2 seconds...')
+                            import time
+                            time.sleep(2)
+                            st.session_state['patients'] = load_patients_from_firestore()
+                            st.session_state['enrollment_mode'] = False
+                            # Clear enrollment form values
+                            st.session_state['enroll_name_val'] = ''
+                            st.session_state['enroll_dob_val'] = ''
+                            st.session_state['enroll_age_val'] = 18
+                            st.session_state['enroll_notes_patient_val'] = ''
+                            st.session_state['visit_sbp_val'] = 100
+                            st.session_state['visit_dbp_val'] = 60
+                            st.session_state['visit_bmi_val'] = 22.0
+                            st.session_state['visit_notes_val'] = ''
+                        else:
+                            st.warning(f'⚠️ Patient {enroll_name} enrolled (local storage only)')
+                            st.session_state['enrollment_mode'] = False
+            
+            with save_col2:
+                if st.button('❌ Cancel', use_container_width=True):
+                    st.session_state['enrollment_mode'] = False
+                    st.session_state['unsaved_changes'] = False
+                    # Clear enrollment form values
+                    st.session_state['enroll_name_val'] = ''
+                    st.session_state['enroll_dob_val'] = ''
+                    st.session_state['enroll_age_val'] = 18
+                    st.session_state['enroll_notes_patient_val'] = ''
+                    st.session_state['visit_sbp_val'] = 100
+                    st.session_state['visit_dbp_val'] = 60
+                    st.session_state['visit_bmi_val'] = 22.0
+                    st.session_state['visit_notes_val'] = ''
+                    st.info('Enrollment cancelled.')
+        st.stop()  # Stop here when in enrollment mode - don't show patient view
             
             if st.button('🔍 Predict & Review', use_container_width=True):
                 st.session_state['unsaved_changes'] = True
@@ -729,234 +897,282 @@ else:  # Dashboard page
                     st.session_state['unsaved_changes'] = False
                     st.info('Enrollment cancelled.')
 
-    # Define dashboard layout columns before use
-    layout_left, layout_main = st.columns([1, 2])
+    # VIEW PATIENTS MODE: Show patient list and details
+    st.markdown('---')
+    st.subheader('👥 Patient Records')
     
-    with layout_left:
-        st.subheader('Doctor dashboard')
-        st.write('Select patients below:')
-        
-        search_term = st.text_input('Search patients', '', placeholder='Name or ID', key='patient_search')
-
-        with st.spinner('🔄 Loading patients...'):
-            filtered_patients = [p for p in st.session_state['patients'] 
-                                 if search_term.lower() in p['name'].lower() or search_term.lower() in p['id'].lower()]
-
-        if filtered_patients:
-            patient_ids = [p['id'] for p in filtered_patients]
-            patient_names = {p['id']: p['name'] for p in filtered_patients}
-            current_index = patient_ids.index(st.session_state['selected_patient']) if st.session_state['selected_patient'] in patient_ids else 0
-
-            chosen_id = st.selectbox('Choose patient', patient_ids, index=current_index,
-                                     format_func=lambda x: patient_names.get(x, x))
-            
-            if chosen_id != st.session_state['selected_patient']:
-                if st.session_state['unsaved_changes']:
-                    st.warning('⚠️ You have unsaved changes. You may want to save them before switching patients.')
-                st.session_state['selected_patient'] = chosen_id
-                st.session_state['unsaved_changes'] = False
-        else:
-            st.info('No patients match your search.')
-
-        st.markdown('---')
-        if st.button('🗑️ Remove selected patient', use_container_width=True):
-            if st.session_state['selected_patient'] is not None:
-                before = len(st.session_state['patients'])
-                st.session_state['patients'] = [p for p in st.session_state['patients'] if p['id'] != st.session_state['selected_patient']]
-                if len(st.session_state['patients']) < before:
-                    st.success('Removed selected patient')
-                    if st.session_state['patients']:
-                        st.session_state['selected_patient'] = st.session_state['patients'][0]['id']
-                    else:
-                        st.session_state['selected_patient'] = None
-        selected_patient = next((p for p in st.session_state['patients'] if p['id'] == st.session_state['selected_patient']), None)
-        if selected_patient:
-            st.write('**Selected:**', selected_patient['name'])
-            st.write('**DOB:**', selected_patient['dob'])
-            st.write('Visits recorded:', len(selected_patient['visits']))
+    # Display all patients in a table at the top
+    if st.session_state['patients']:
+        st.write('#### All Patients')
+        patients_table_data = []
+        for p in st.session_state['patients']:
+            patients_table_data.append({
+                'Name': p['name'],
+                'ID': p.get('id', 'N/A'),
+                'DOB': p.get('dob', 'N/A'),
+                'Visits': len(p.get('visits', []))
+            })
+        patients_df = pd.DataFrame(patients_table_data)
+        st.dataframe(patients_df, use_container_width=True, hide_index=True)
     
-    with layout_main:
-        selected_patient = next((p for p in st.session_state['patients'] if p['id'] == st.session_state['selected_patient']), None)
-        
-        if not selected_patient:
-            st.error('No patient selected')
-            st.stop()
-        
-        st.subheader(f"Patient: {selected_patient['name']}")
-
-        if 'carousel_page' not in st.session_state:
-            st.session_state['carousel_page'] = 0
-        if 'carousel_auto_rotate' not in st.session_state:
-            st.session_state['carousel_auto_rotate'] = True
-
-        carousel_action = st.radio('Chart view', ['Diagnostics trend', 'Risk trend'], index=st.session_state['carousel_page'], horizontal=True)
-        st.session_state['carousel_page'] = 0 if carousel_action == 'Diagnostics trend' else 1
-
-        rotate_col1, rotate_col2, rotate_col3 = st.columns([1, 1, 1])
-        with rotate_col1:
-            if st.button('◀ Prev', key='carousel_prev'):
-                st.session_state['carousel_page'] = (st.session_state['carousel_page'] - 1) % 2
-        with rotate_col2:
-            st.session_state['carousel_auto_rotate'] = st.checkbox('Auto rotate (5 sec)', value=st.session_state['carousel_auto_rotate'], key='carousel_auto')
-        with rotate_col3:
-            if st.button('Next ▶', key='carousel_next'):
-                st.session_state['carousel_page'] = (st.session_state['carousel_page'] + 1) % 2
-
-        if st.session_state['carousel_auto_rotate']:
-            # Simple auto-rotate using session state and time
-            if 'carousel_last_update' not in st.session_state:
-                st.session_state['carousel_last_update'] = time.time()
-            
-            current_time = time.time()
-            if current_time - st.session_state['carousel_last_update'] >= 5:
-                st.session_state['carousel_page'] = (st.session_state['carousel_page'] + 1) % 2
-                st.session_state['carousel_last_update'] = current_time
-                st.rerun()  # Trigger a rerun to update the page
-
-        visits_df = pd.DataFrame([{
-            'visit': v.get('label', f"Visit {i+1}"),
-            'sbp': v.get('sbp', None),
-            'dbp': v.get('dbp', None),
-            'risk': v.get('risk', 0.0)
-        } for i, v in enumerate(selected_patient.get('visits', []))])
-
-        # Chart colors based on theme
-        if st.session_state['theme'] == 'Dark':
-            sbp_color = '#79c0ff'
-            dbp_color = '#a5d6ff'
-            risk_color = '#f85149'
-            axis_color = '#8b949e'
-        else:
-            sbp_color = '#0ea5e9'
-            dbp_color = '#06b6d4'
-            risk_color = '#dc2626'
-            axis_color = '#6b7280'
-
-        if st.session_state['carousel_page'] == 0:
-            st.markdown('### 📊 Diagnostics Trend (SBP/DBP)')
-            if not visits_df.empty:
-                # Create base chart with both measurements
-                melt_df = visits_df.melt(id_vars=['visit'], value_vars=['sbp', 'dbp'], var_name='measurement', value_name='value')
-                
-                chart = alt.Chart(melt_df).mark_line(point=True, size=3, opacity=0.8).encode(
-                    x=alt.X('visit:N', title='Visit', axis=alt.Axis(labelColor=axis_color, titleColor=axis_color, domainColor=axis_color)),
-                    y=alt.Y('value:Q', title='Blood Pressure (mmHg)', axis=alt.Axis(labelColor=axis_color, titleColor=axis_color, domainColor=axis_color)),
-                    color=alt.Color('measurement:N', title='Measurement', legend=alt.Legend(titleColor=axis_color, labelColor=axis_color)),
-                    tooltip=['visit:N', 'measurement:N', alt.Tooltip('value:Q', format='.0f')]
-                ).properties(width=600, height=300).interactive()
-                
-                st.altair_chart(chart, use_container_width=True)
-            else:
-                st.warning('No visit data yet for diagnostics trend.')
-        else:
-            st.markdown('### 📈 Risk Trend')
-            if not visits_df.empty:
-                chart = alt.Chart(visits_df).mark_line(point=True, size=3, color=risk_color, opacity=0.9).encode(
-                    x=alt.X('visit:N', title='Visit', axis=alt.Axis(labelColor=axis_color, titleColor=axis_color, domainColor=axis_color)),
-                    y=alt.Y('risk:Q', title='HDP Risk Score', axis=alt.Axis(labelColor=axis_color, titleColor=axis_color, domainColor=axis_color, format='.2%')),
-                    tooltip=['visit:N', alt.Tooltip('risk:Q', format='.2%')]
-                ).properties(width=600, height=300).interactive()
-                
-                st.altair_chart(chart, use_container_width=True)
-            else:
-                st.warning('No visit data yet for risk trend.')
-
-        visit_labels = [v.get('label', f"Visit {i+1}") for i, v in enumerate(selected_patient.get('visits', []))]
-        if not visit_labels:
-            st.warning('No visits available. Enter at least one visit first.')
-            st.stop()
+    st.markdown('---')
+    st.write('#### Select Patient to View Details')
     
-        selected_visit_label = st.selectbox('Choose visit history entry:', visit_labels)
-        visit_record = next((v for v in selected_patient['visits'] if v.get('label') == selected_visit_label), selected_patient['visits'][0])
+    # Search and select patient
+    search_term = st.text_input('Search by name or ID', '', placeholder='Enter patient name or ID', key='patient_search_v2')
+    
+    with st.spinner('🔄 Loading patients...'):
+        filtered_patients = [p for p in st.session_state['patients'] 
+                             if search_term.lower() in p['name'].lower() or search_term.lower() in p['id'].lower()]
+    
+    if filtered_patients:
+        patient_ids = [p['id'] for p in filtered_patients]
+        patient_names = {p['id']: p['name'] for p in filtered_patients}
         
-        history_col, entry_col = st.columns([1, 2])
+        # Set default to first patient or keep previous selection
+        if st.session_state['selected_patient'] and st.session_state['selected_patient'] in patient_ids:
+            current_index = patient_ids.index(st.session_state['selected_patient'])
+        else:
+            current_index = 0
         
-        with history_col:
-            st.markdown('### Existing visit')
-            st.write('Date:', visit_record['date'])
-            st.write('SBP:', visit_record['sbp'])
-            st.write('DBP:', visit_record['dbp'])
-            st.write('Risk:', f"{visit_record['risk']*100:.1f}%")
-            st.write('Notes:', visit_record['notes'])
+        chosen_id = st.selectbox('Choose patient', patient_ids, index=current_index,
+                                 format_func=lambda x: patient_names.get(x, x), key='patient_select')
         
-        with entry_col:
-            st.markdown('### Add new measurements')
-            new_sbp = st.number_input('SBP', value=visit_record['sbp'], min_value=80, max_value=220)
-            new_dbp = st.number_input('DBP', value=visit_record['dbp'], min_value=50, max_value=150)
-            new_bmi = st.number_input('BMI', value=26.0, min_value=16.0, max_value=45.0)
-            new_note = st.text_area('Doctor notes', '')
+        if chosen_id != st.session_state['selected_patient']:
+            if st.session_state['unsaved_changes']:
+                st.warning('⚠️ You have unsaved changes. You may want to save them before switching patients.')
+            st.session_state['selected_patient'] = chosen_id
+            st.session_state['unsaved_changes'] = False
+    else:
+        st.info('No patients match your search.')
+        st.stop()
+    
+    # Get selected patient
+    selected_patient = next((p for p in st.session_state['patients'] if p['id'] == st.session_state['selected_patient']), None)
+    if not selected_patient:
+        st.error('No patient selected')
+        st.stop()
+    
+    st.markdown('---')
+    st.subheader(f"Patient: {selected_patient['name']}")
+    st.write(f"**DOB:** {selected_patient['dob']} | **ID:** {selected_patient['id']}")
+    
+    # Show visits table
+    st.write(f"#### Visits recorded: {len(selected_patient['visits'])}")
+    if selected_patient['visits']:
+        visits_table_data = []
+        for i, v in enumerate(selected_patient['visits'], 1):
+            visits_table_data.append({
+                'Visit #': f"Visit {i}",
+                'Date': v.get('date', 'N/A'),
+                'SBP (mmHg)': v.get('sbp', 'N/A'),
+                'DBP (mmHg)': v.get('dbp', 'N/A'),
+                'Risk %': f"{v.get('risk', 0.0)*100:.1f}%" if v.get('risk') else 'N/A',
+                'Notes': v.get('notes', '')
+            })
+        visits_table_df = pd.DataFrame(visits_table_data)
+        st.dataframe(visits_table_df, use_container_width=True, hide_index=True)
+    else:
+        st.info('No visits recorded yet.')
+    
+    st.markdown('---')
+    
+    # Charts and visit details
+    if 'carousel_page' not in st.session_state:
+        st.session_state['carousel_page'] = 0
+    if 'carousel_auto_rotate' not in st.session_state:
+        st.session_state['carousel_auto_rotate'] = True
+    
+    carousel_action = st.radio('Chart view', ['Diagnostics trend', 'Risk trend'], index=st.session_state['carousel_page'], horizontal=True)
+    st.session_state['carousel_page'] = 0 if carousel_action == 'Diagnostics trend' else 1
+    
+    rotate_col1, rotate_col2, rotate_col3 = st.columns([1, 1, 1])
+    with rotate_col1:
+        if st.button('◀ Prev', key='carousel_prev'):
+            st.session_state['carousel_page'] = (st.session_state['carousel_page'] - 1) % 2
+    with rotate_col2:
+        st.session_state['carousel_auto_rotate'] = st.checkbox('Auto rotate (5 sec)', value=st.session_state['carousel_auto_rotate'], key='carousel_auto')
+    with rotate_col3:
+        if st.button('Next ▶', key='carousel_next'):
+            st.session_state['carousel_page'] = (st.session_state['carousel_page'] + 1) % 2
+    
+    if st.session_state['carousel_auto_rotate']:
+        # Simple auto-rotate using session state and time
+        if 'carousel_last_update' not in st.session_state:
+            st.session_state['carousel_last_update'] = time.time()
+        
+        current_time = time.time()
+        if current_time - st.session_state['carousel_last_update'] >= 5:
+            st.session_state['carousel_page'] = (st.session_state['carousel_page'] + 1) % 2
+            st.session_state['carousel_last_update'] = current_time
+            st.rerun()
+    
+    visits_df = pd.DataFrame([{
+        'visit': f"Visit {i+1}\n({v.get('date', 'N/A')})",
+        'sbp': v.get('sbp', None),
+        'dbp': v.get('dbp', None),
+        'risk': v.get('risk', 0.0)
+    } for i, v in enumerate(selected_patient.get('visits', []))])
+    
+    # Chart colors based on theme
+    if st.session_state['theme'] == 'Dark':
+        sbp_color = '#79c0ff'
+        dbp_color = '#a5d6ff'
+        risk_color = '#f85149'
+        axis_color = '#8b949e'
+    else:
+        sbp_color = '#0ea5e9'
+        dbp_color = '#06b6d4'
+        risk_color = '#dc2626'
+        axis_color = '#6b7280'
+    
+    if st.session_state['carousel_page'] == 0:
+        st.markdown('### 📊 Diagnostics Trend (SBP/DBP)')
+        if not visits_df.empty:
+            # Create base chart with both measurements
+            melt_df = visits_df.melt(id_vars=['visit'], value_vars=['sbp', 'dbp'], var_name='measurement', value_name='value')
             
-            if st.button('Predict & Save new visit'):
-                seq_len = 20
-                sbp_seq = np.linspace(new_sbp - 12, new_sbp, seq_len) + np.random.normal(0, 2, seq_len)
-                dbp_seq = np.linspace(new_dbp - 8, new_dbp, seq_len) + np.random.normal(0, 1.5, seq_len)
-                map_seq = 0.4 * sbp_seq + 0.6 * dbp_seq
-                bmi_seq = np.full(seq_len, new_bmi) + np.linspace(0, 1.2, seq_len)
-                weight_seq = np.linspace(0, 2.0, seq_len)
-                oliguria = np.where(np.random.rand(seq_len) < 0.05, 1, 0)
-                proteinuria = np.where(np.random.rand(seq_len) < 0.03, 1, 0)
-                
-                input_data = np.vstack([sbp_seq, dbp_seq, map_seq, bmi_seq, weight_seq, oliguria, proteinuria]).T
-                input_model = input_data.reshape(1, seq_len, 7)
-                
-                clf = joblib.load('artifacts/risk_classifier.pkl')
-                reg = joblib.load('artifacts/time_regressor.pkl')
-                mean_ = np.load('artifacts/risk_scaler_mean.npy')
-                scale_ = np.load('artifacts/risk_scaler_scale.npy')
-                scaler = StandardScaler()
-                scaler.mean_ = mean_
-                scaler.scale_ = scale_
-                scaler.var_ = scale_**2
-                scaler.n_features_in_ = 7
-                
-                input_scaled = scaler.transform(input_model.reshape(-1, 7)).reshape(1, seq_len, 7)
-                input_flat = input_scaled.reshape(1, -1)  # Flatten for sklearn
-                pred_risk = clf.predict_proba(input_flat)[0, 1]  # Probability of positive class
-                pred_time = reg.predict(input_flat)[0]
-                
-                st.metric('HDP risk', f'{pred_risk*100:.1f}%')
-                st.metric('Time to event (weeks)', f'{pred_time:.1f}')
-                
-                st.warning('Confirm save to patient record?')
-                
-                confirm_col1, confirm_col2 = st.columns(2)
-                with confirm_col1:
-                    if st.button('✅ Save visit', key='confirm_save_visit'):
-                        adv_note = new_note if new_note else 'No note provided.'
-                        next_label = f"Visit {len(selected_patient['visits'])+1}"
-                        selected_patient['visits'].append({
-                            'label': next_label,
-                            'date': datetime.now().strftime('%Y-%m-%d'),
-                            'sbp': int(new_sbp),
-                            'dbp': int(new_dbp),
-                            'risk': float(pred_risk),
-                            'notes': adv_note
-                        })
-                        # Persist updated patient list in session state for multi-visit patients
-                        st.session_state['patients'] = [
-                            (p if p['id'] != selected_patient['id'] else selected_patient)
-                            for p in st.session_state['patients']
-                        ]
-                        if db:
-                            # Save visit to Firestore separately
-                            visit_doc = selected_patient['visits'][-1]
-                            db.collection('patients').document(selected_patient['id']).collection('visits').document(visit_doc['label']).set({
-                                'date': visit_doc['date'],
-                                'sbp': visit_doc['sbp'],
-                                'dbp': visit_doc['dbp'],
-                                'risk': float(visit_doc['risk']),
-                                'notes': visit_doc['notes'],
-                                'created_at': firestore.SERVER_TIMESTAMP
-                            })
-                        st.session_state['selected_patient'] = selected_patient['id']
-                        st.success('New visit saved to patient history.')
-                        st.success('✅ Visit added. Select another visit to verify data is shown.')
-                
-                with confirm_col2:
-                    if st.button('❌ Cancel', key='cancel_save_visit'):
-                        st.info('Visit not saved.')
+            chart = alt.Chart(melt_df).mark_line(point=True, size=3, opacity=0.8).encode(
+                x=alt.X('visit:N', title='Visit', axis=alt.Axis(labelColor=axis_color, titleColor=axis_color, domainColor=axis_color)),
+                y=alt.Y('value:Q', title='Blood Pressure (mmHg)', axis=alt.Axis(labelColor=axis_color, titleColor=axis_color, domainColor=axis_color)),
+                color=alt.Color('measurement:N', title='Measurement', legend=alt.Legend(titleColor=axis_color, labelColor=axis_color)),
+                tooltip=['visit:N', 'measurement:N', alt.Tooltip('value:Q', format='.0f')]
+            ).properties(width=600, height=300).interactive()
+            
+            st.altair_chart(chart, use_container_width=True)
+        else:
+            st.warning('No visit data yet for diagnostics trend.')
+    else:
+        st.markdown('### 📈 Risk Trend Over Visits')
+        if not visits_df.empty:
+            risk_chart = alt.Chart(visits_df).mark_line(point=True, size=3, opacity=0.8, color=risk_color).encode(
+                x=alt.X('visit:N', title='Visit', axis=alt.Axis(labelColor=axis_color, titleColor=axis_color, domainColor=axis_color)),
+                y=alt.Y('risk:Q', title='Risk (%)', axis=alt.Axis(labelColor=axis_color, titleColor=axis_color, domainColor=axis_color)),
+                tooltip=['visit:N', alt.Tooltip('risk:Q', format='.1%')]
+            ).properties(width=600, height=300).interactive()
+            
+            st.altair_chart(risk_chart, use_container_width=True)
+        else:
+            st.warning('No risk data yet.')
+    
+    st.markdown('---')
+    
+    # Last visit details and new measurements
+    st.write('#### Visit History & New Measurements')
+    last_visit_col, new_visit_col = st.columns(2)
+    
+    # LEFT SIDE: Last visit details
+    with last_visit_col:
+        st.write('**Last Visit Details**')
+        if selected_patient['visits']:
+            last_visit = selected_patient['visits'][-1]
+            visit_num = len(selected_patient['visits'])
+            st.write(f"**Visit {visit_num}** ({last_visit.get('date', 'N/A')})")
+            st.write(f"- **Date:** {last_visit.get('date', 'N/A')}")
+            st.write(f"- **SBP:** {last_visit.get('sbp', 'N/A')} mmHg")
+            st.write(f"- **DBP:** {last_visit.get('dbp', 'N/A')} mmHg")
+            st.write(f"- **Risk:** {last_visit.get('risk', 0.0)*100:.1f}%")
+            st.write(f"- **Notes:** {last_visit.get('notes', 'N/A')}")
+        else:
+            st.info('No visits recorded yet.')
+    
+    # RIGHT SIDE: Add new measurements
+    with new_visit_col:
+        st.write('**Add New Measurements**')
         
-        st.markdown('---')
-        st.write('* Clinical disclaimer: this is demo data only. For production, validate with real patient data + regulatory review.*')
+        # Initialize empty new visit fields
+        if 'new_visit_sbp' not in st.session_state:
+            st.session_state['new_visit_sbp'] = ''
+        if 'new_visit_dbp' not in st.session_state:
+            st.session_state['new_visit_dbp'] = ''
+        if 'new_visit_bmi' not in st.session_state:
+            st.session_state['new_visit_bmi'] = ''
+        if 'new_visit_notes' not in st.session_state:
+            st.session_state['new_visit_notes'] = ''
+        
+        # Empty input fields for new visit
+        new_sbp_str = st.text_input('SBP (mmHg)', value=st.session_state.get('new_visit_sbp', ''), key='new_visit_sbp_input',
+                                    on_change=lambda: st.session_state.update({'new_visit_sbp': st.session_state.get('new_visit_sbp_input', '')}))
+        new_dbp_str = st.text_input('DBP (mmHg)', value=st.session_state.get('new_visit_dbp', ''), key='new_visit_dbp_input',
+                                    on_change=lambda: st.session_state.update({'new_visit_dbp': st.session_state.get('new_visit_dbp_input', '')}))
+        new_bmi_str = st.text_input('BMI', value=st.session_state.get('new_visit_bmi', ''), key='new_visit_bmi_input',
+                                    on_change=lambda: st.session_state.update({'new_visit_bmi': st.session_state.get('new_visit_bmi_input', '')}))
+        new_notes = st.text_area('Doctor notes', value=st.session_state.get('new_visit_notes', ''), key='new_visit_notes_input',
+                                height=100, on_change=lambda: st.session_state.update({'new_visit_notes': st.session_state.get('new_visit_notes_input', '')}))
+        
+        if st.button('💾 Predict & Save new visit', use_container_width=True, key='save_new_visit'):
+            try:
+                # Validate inputs
+                new_sbp = int(new_sbp_str) if new_sbp_str else None
+                new_dbp = int(new_dbp_str) if new_dbp_str else None
+                new_bmi = float(new_bmi_str) if new_bmi_str else None
+                
+                if not all([new_sbp, new_dbp, new_bmi]):
+                    st.error('Please enter valid values for SBP, DBP, and BMI.')
+                else:
+                    with st.spinner('🔄 Calculating risk prediction...'):
+                        # Generate prediction
+                        np.random.seed(42)
+                        seq_len = 20
+                        sbp_seq = np.linspace(new_sbp - 12, new_sbp, seq_len) + np.random.normal(0, 2, seq_len)
+                        dbp_seq = np.linspace(new_dbp - 8, new_dbp, seq_len) + np.random.normal(0, 1.5, seq_len)
+                        map_seq = 0.4 * sbp_seq + 0.6 * dbp_seq
+                        bmi_seq = np.full(seq_len, new_bmi) + np.linspace(0, 1.2, seq_len)
+                        weight_seq = np.linspace(0, 2.0, seq_len)
+                        oliguria = np.where(np.random.rand(seq_len) < 0.05, 1, 0)
+                        proteinuria = np.where(np.random.rand(seq_len) < 0.03, 1, 0)
+                        
+                        input_data = np.vstack([sbp_seq, dbp_seq, map_seq, bmi_seq, weight_seq, oliguria, proteinuria]).T
+                        input_model = input_data.reshape(1, seq_len, 7)
+                        
+                        clf = joblib.load('artifacts/risk_classifier.pkl')
+                        reg = joblib.load('artifacts/time_regressor.pkl')
+                        mean_ = np.load('artifacts/risk_scaler_mean.npy')
+                        scale_ = np.load('artifacts/risk_scaler_scale.npy')
+                        scaler = StandardScaler()
+                        scaler.mean_ = mean_
+                        scaler.scale_ = scale_
+                        scaler.var_ = scale_**2
+                        scaler.n_features_in_ = 7
+                        
+                        input_scaled = scaler.transform(input_model.reshape(-1, 7)).reshape(1, seq_len, 7)
+                        input_flat = input_scaled.reshape(1, -1)
+                        pred_risk = clf.predict_proba(input_flat)[0, 1]
+                        pred_time = reg.predict(input_flat)[0]
+                    
+                    # Add new visit to patient
+                    visit_number = len(selected_patient['visits']) + 1
+                    new_visit = {
+                        'label': f'Visit {visit_number}',
+                        'date': datetime.now().strftime('%Y-%m-%d'),
+                        'sbp': new_sbp,
+                        'dbp': new_dbp,
+                        'risk': float(pred_risk),
+                        'notes': new_notes or 'Follow-up visit'
+                    }
+                    selected_patient['visits'].append(new_visit)
+                    st.success(f'✅ New visit saved! Risk: {pred_risk*100:.1f}%')
+                    st.info(f'⏳ Refreshing in 2 seconds...')
+                    time.sleep(2)
+                    # Clear fields
+                    st.session_state['new_visit_sbp'] = ''
+                    st.session_state['new_visit_dbp'] = ''
+                    st.session_state['new_visit_bmi'] = ''
+                    st.session_state['new_visit_notes'] = ''
+                    st.rerun()
+            except ValueError:
+                st.error('Please enter valid numeric values.')
+    
+    st.markdown('---')
+    
+    # Remove patient button
+    if st.button('🗑️ Remove this patient', use_container_width=True):
+        st.session_state['patients'] = [p for p in st.session_state['patients'] if p['id'] != st.session_state['selected_patient']]
+        st.success('Patient removed.')
+        if st.session_state['patients']:
+            st.session_state['selected_patient'] = st.session_state['patients'][0]['id']
+        else:
+            st.session_state['selected_patient'] = None
+        st.rerun()
     
     
