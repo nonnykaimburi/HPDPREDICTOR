@@ -8,6 +8,7 @@ from datetime import datetime
 import os
 import base64
 import json
+import time
 
 # Firestore integration (optional, skip if not installed)
 try:
@@ -734,10 +735,15 @@ else:  # Dashboard page
                 st.session_state['carousel_page'] = (st.session_state['carousel_page'] + 1) % 2
 
         if st.session_state['carousel_auto_rotate']:
-            refresh_count = st_autorefresh(interval=5000, key='carousel_timer')
-            # Use refresh count to update page
-            if refresh_count > 0:
+            # Simple auto-rotate using session state and time
+            if 'carousel_last_update' not in st.session_state:
+                st.session_state['carousel_last_update'] = time.time()
+            
+            current_time = time.time()
+            if current_time - st.session_state['carousel_last_update'] >= 5:
                 st.session_state['carousel_page'] = (st.session_state['carousel_page'] + 1) % 2
+                st.session_state['carousel_last_update'] = current_time
+                st.rerun()  # Trigger a rerun to update the page
 
         visits_df = pd.DataFrame([{
             'visit': v.get('label', f"Visit {i+1}"),
