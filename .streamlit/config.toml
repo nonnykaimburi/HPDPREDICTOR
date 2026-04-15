@@ -1,12 +1,11 @@
 [client]
 showErrorDetails = false
-showWarningOnDirectExecution = false
 
 [logger]
 level = "info"
 
 [server]
-port = 8501
+port = 8502
 headless = true
 runOnSave = true
 enableXsrfProtection = false
@@ -14,10 +13,11 @@ maxUploadSize = 200
 enableCORS = false
 
 [theme]
+base = "dark"
 primaryColor = "#FF6B6B"
-backgroundColor = "#F3F4F6"
-secondaryBackgroundColor = "#FFFFFF"
-textColor = "#1F2937"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#161B22"
+textColor = "#E6EAED"
 font = "sans serif"
 
 [browser]
