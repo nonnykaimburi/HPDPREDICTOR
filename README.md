@@ -1,32 +1,49 @@
-# 🏥 HDP PREDICTOR
-## Hypertensive Disorder of Pregnancy Risk Prediction System
+# HPDPREDICTOR
 
-A clinical decision support system for predicting maternal hypertensive disorders using machine learning trained on validated epidemiological data.
+Hypertensive Disorder of Pregnancy Risk Prediction System - A clinical decision support system for predicting maternal hypertensive disorders using machine learning.
 
----
+## Features
 
-## 🚀 Quick Start
+- Machine learning models for maternal risk prediction
+- Firebase integration for data management
+- Streamlit web interface for easy access
+- SHAP and LIME explainability analysis
+- Docker containerization support
+- Cloud deployment ready (Streamlit Cloud, Render, Vercel)
 
-### **Windows Users:**
-Simply **double-click** `run.bat` - it will automatically find an available port and launch the app.
+## Quick Start
 
-```bash
-run.bat
-```
+### Windows Users
+Double-click `run.bat` to launch the app automatically.
 
-### **Mac/Linux Users:**
-Run the bash script:
-
+### Mac/Linux Users
 ```bash
 bash run.sh
 ```
 
-### **Manual Python Launch:**
-If you prefer command-line:
-
+### Manual Launch
 ```bash
-python launcher.py
+pip install -r requirements.txt
+streamlit run app.py
 ```
+
+## Deployment
+
+This app is ready for deployment on:
+- **Streamlit Cloud** - Recommended for easiest setup
+- **Render** - See `render.yaml`
+- **Vercel** - See `vercel.json` and `FIREBASE_VERCEL_SETUP.md`
+- **Docker** - See `Dockerfile`
+
+## Setup
+
+1. Install dependencies: `pip install -r requirements.txt`
+2. Configure Firebase credentials (optional)
+3. Run the application using one of the methods above
+
+## License
+
+MIT
 
 ---
 
