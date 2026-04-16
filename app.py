@@ -44,6 +44,9 @@ if firebase_admin and firestore:
             try:
                 if 'firebase' in st.secrets and st.secrets['firebase']:
                     firebase_dict = dict(st.secrets['firebase'])
+                    # Fix: Convert escaped newlines to actual newlines in private_key
+                    if 'private_key' in firebase_dict and isinstance(firebase_dict['private_key'], str):
+                        firebase_dict['private_key'] = firebase_dict['private_key'].replace('\\n', '\n')
                     firebase_json = json.dumps(firebase_dict)
                     # Only write if it has valid content (not empty/placeholder)
                     if firebase_dict.get('project_id') and not firebase_dict.get('project_id').startswith('YOUR_'):
