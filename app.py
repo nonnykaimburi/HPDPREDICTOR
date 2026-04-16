@@ -258,8 +258,65 @@ def seed_demo_patients_to_firestore(force_reseed=False):
 
 
 def load_patients_from_firestore():
+    # If Firebase is not available, return demo patients for display
     if not db:
-        return []  # Return empty list - no hardcoded defaults
+        return [
+            {
+                'id': 'p001',
+                'name': 'Amina Olufemi',
+                'dob': '1995-07-22',
+                'visits': [
+                    {'label': 'Visit 1', 'date': '2026-01-10', 'sbp': 112, 'dbp': 72, 'risk': 0.17, 'notes': 'Normal monitoring.'},
+                    {'label': 'Visit 2', 'date': '2026-02-12', 'sbp': 118, 'dbp': 78, 'risk': 0.28, 'notes': 'Raised BP, start diet.'},
+                    {'label': 'Visit 3', 'date': '2026-03-15', 'sbp': 114, 'dbp': 75, 'risk': 0.22, 'notes': 'Response to lifestyle changes.'}
+                ]
+            },
+            {
+                'id': 'p002',
+                'name': 'Zola Nkosi',
+                'dob': '1990-03-05',
+                'visits': [
+                    {'label': 'Visit 1', 'date': '2026-01-20', 'sbp': 130, 'dbp': 84, 'risk': 0.43, 'notes': 'Pre-hypertension alert.'},
+                    {'label': 'Visit 2', 'date': '2026-02-15', 'sbp': 136, 'dbp': 88, 'risk': 0.58, 'notes': 'Prescription started.'},
+                    {'label': 'Visit 3', 'date': '2026-03-20', 'sbp': 134, 'dbp': 86, 'risk': 0.52, 'notes': 'Medication compliance good.'},
+                    {'label': 'Visit 4', 'date': '2026-04-05', 'sbp': 128, 'dbp': 82, 'risk': 0.46, 'notes': 'Improving trend.'}
+                ]
+            },
+            {
+                'id': 'p003',
+                'name': 'Fatima Diallo',
+                'dob': '1998-11-28',
+                'visits': [
+                    {'label': 'Visit 1', 'date': '2026-01-05', 'sbp': 104, 'dbp': 66, 'risk': 0.08, 'notes': 'Healthy baseline.'},
+                    {'label': 'Visit 2', 'date': '2026-02-20', 'sbp': 106, 'dbp': 68, 'risk': 0.10, 'notes': 'Stable vital signs.'},
+                    {'label': 'Visit 3', 'date': '2026-03-25', 'sbp': 108, 'dbp': 70, 'risk': 0.12, 'notes': 'Continue monitoring.'}
+                ]
+            },
+            {
+                'id': 'p004',
+                'name': 'Makena Odinga',
+                'dob': '1992-05-14',
+                'visits': [
+                    {'label': 'Visit 1', 'date': '2026-01-12', 'sbp': 125, 'dbp': 81, 'risk': 0.35, 'notes': 'Mild elevation.'},
+                    {'label': 'Visit 2', 'date': '2026-02-08', 'sbp': 132, 'dbp': 85, 'risk': 0.45, 'notes': 'Increase in BP.'},
+                    {'label': 'Visit 3', 'date': '2026-03-10', 'sbp': 138, 'dbp': 89, 'risk': 0.55, 'notes': 'Consider hospitalization.'},
+                    {'label': 'Visit 4', 'date': '2026-04-01', 'sbp': 141, 'dbp': 91, 'risk': 0.62, 'notes': 'High risk monitoring.'},
+                    {'label': 'Visit 5', 'date': '2026-04-12', 'sbp': 139, 'dbp': 90, 'risk': 0.59, 'notes': 'Weekly follow-up required.'}
+                ]
+            },
+            {
+                'id': 'p005',
+                'name': 'Adaeze Eze',
+                'dob': '1996-09-03',
+                'visits': [
+                    {'label': 'Visit 1', 'date': '2026-01-18', 'sbp': 110, 'dbp': 70, 'risk': 0.13, 'notes': 'Initial assessment.'},
+                    {'label': 'Visit 2', 'date': '2026-02-25', 'sbp': 115, 'dbp': 73, 'risk': 0.19, 'notes': 'Slight increase monitoring.'},
+                    {'label': 'Visit 3', 'date': '2026-03-30', 'sbp': 120, 'dbp': 76, 'risk': 0.27, 'notes': 'Preventive measures discussed.'}
+                ]
+            }
+        ]
+    
+    # Original Firebase loading code
     patients = []
     for pdoc in db.collection('patients').stream():
         pdata = pdoc.to_dict()
