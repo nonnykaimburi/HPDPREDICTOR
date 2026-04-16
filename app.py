@@ -23,15 +23,14 @@ from pathlib import Path
 
 st.set_page_config(page_title='HDP PREDICTOR', layout='wide')
 
-# Firebase service setup - DISABLED for Streamlit Cloud compatibility
+# Firebase service setup
 firebase_service_account_path = Path('firebase-service-account.json')
 db = None
 firebase_initialized = False
 firebase_error_message = None
 
-# Skip Firebase initialization on cloud - use local session state instead
-if False:  # DISABLED - Firebase causes issues on Streamlit Cloud
-    if firebase_admin and firestore:
+# Try to load Firebase credentials from file or environment variable (for Vercel/Render)
+if firebase_admin and firestore:
     # Check if already initialized to prevent multiple initialization
     if not firebase_admin._apps:
         cred_source = None
