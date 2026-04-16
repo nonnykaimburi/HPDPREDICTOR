@@ -460,12 +460,7 @@ if page == "System Architecture":
 
 else:  # Dashboard page
     
-    if not firebase_initialized:
-        if firebase_error_message:
-            st.warning(f'ℹ️ Firebase: {firebase_error_message}. App works without it.')
-        else:
-            st.warning('ℹ️ Firebase is not initialized. Patient data will not be saved across sessions.')
-
+    # Don't show Firebase warnings - app works fine without it
     if not st.session_state['logged_in']:
         st.title('HDP PREDICTOR')
         st.markdown('### Hypertensive Disorder of Pregnancy Risk Assessment')
