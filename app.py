@@ -726,6 +726,7 @@ else:  # Dashboard page
                         # Reuse cached prediction
                         pred_risk = st.session_state['cached_pred_risk']
                         pred_time = st.session_state['cached_pred_time']
+                        pred_lstm_temporal = st.session_state.get('cached_pred_lstm_temporal')
                     else:
                         # Generate new prediction (only once per unique input set)
                         np.random.seed(42)  # Fixed seed for reproducibility
@@ -766,6 +767,9 @@ else:  # Dashboard page
                                 lstm_pred = lstm_model.predict(input_scaled, verbose=0)
                                 # lstm_pred shape: (1, seq_len, 1) - probability at each week
                                 pred_lstm_temporal = lstm_pred[0].flatten()  # Extract probabilities for each week
+                                # Convert to numpy array if it's a tensor
+                                if hasattr(pred_lstm_temporal, 'numpy'):
+                                    pred_lstm_temporal = pred_lstm_temporal.numpy()
                         except Exception as e:
                             # LSTM not available or failed to load
                             import sys
@@ -776,13 +780,13 @@ else:  # Dashboard page
                         st.session_state['cached_prediction_key'] = current_key
                         st.session_state['cached_pred_risk'] = pred_risk
                         st.session_state['cached_pred_time'] = pred_time
-                        st.session_state['cached_pred_lstm_temporal'] = pred_lstm_temporal
+                        st.session_state['cached_pred_lstm_temporal'] = np.array(pred_lstm_temporal) if pred_lstm_temporal is not None else None
                     
                     # Store predictions in session for display
                     st.session_state['pred_risk'] = pred_risk
                     st.session_state['pred_time'] = pred_time
-                    if 'cached_pred_lstm_temporal' in st.session_state:
-                        st.session_state['pred_lstm_temporal'] = st.session_state['cached_pred_lstm_temporal']
+                    if pred_lstm_temporal is not None:
+                        st.session_state['pred_lstm_temporal'] = np.array(pred_lstm_temporal) if not isinstance(pred_lstm_temporal, np.ndarray) else pred_lstm_temporal
         
         st.markdown('---')
         
