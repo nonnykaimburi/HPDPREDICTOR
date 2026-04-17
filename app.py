@@ -10,6 +10,14 @@ import base64
 import json
 import time
 
+# Deep Learning (optional, skip if not installed)
+try:
+    import tensorflow as tf
+    from tensorflow import keras
+except ModuleNotFoundError:
+    tf = None
+    keras = None
+
 # Firestore integration (optional, skip if not installed)
 try:
     import firebase_admin
@@ -748,14 +756,30 @@ else:  # Dashboard page
                         pred_risk = clf.predict_proba(input_flat)[0, 1]  # Probability of positive class
                         pred_time = reg.predict(input_flat)[0]
                         
+                        # LSTM temporal prediction
+                        pred_lstm_temporal = None
+                        try:
+                            if keras:
+                                lstm_model = keras.models.load_model('artifacts/hdp_lstm_model.h5')
+                                # LSTM expects shape (1, seq_len, 7)
+                                lstm_pred = lstm_model.predict(input_scaled, verbose=0)
+                                # lstm_pred shape: (1, seq_len, 1) - probability at each week
+                                pred_lstm_temporal = lstm_pred[0].flatten()  # Extract probabilities for each week
+                        except Exception as e:
+                            # LSTM not available or failed to load
+                            pred_lstm_temporal = None
+                        
                         # Cache the prediction results
                         st.session_state['cached_prediction_key'] = current_key
                         st.session_state['cached_pred_risk'] = pred_risk
                         st.session_state['cached_pred_time'] = pred_time
+                        st.session_state['cached_pred_lstm_temporal'] = pred_lstm_temporal
                     
                     # Store predictions in session for display
                     st.session_state['pred_risk'] = pred_risk
                     st.session_state['pred_time'] = pred_time
+                    if 'cached_pred_lstm_temporal' in st.session_state:
+                        st.session_state['pred_lstm_temporal'] = st.session_state['cached_pred_lstm_temporal']
         
         st.markdown('---')
         
@@ -767,6 +791,31 @@ else:  # Dashboard page
                 st.metric('HDP Risk', f"{st.session_state['pred_risk']*100:.1f}%")
             with col_time:
                 st.metric('Time to Event (weeks)', f"{st.session_state['pred_time']:.1f}")
+            
+            # Display LSTM temporal probability curve if available
+            if 'pred_lstm_temporal' in st.session_state and st.session_state.get('pred_lstm_temporal') is not None:
+                st.markdown('---')
+                st.write('### 📈 Temporal Risk Evolution (LSTM Analysis)')
+                st.info('This curve shows predicted HDP probability at each week of pregnancy based on longitudinal patterns.')
+                
+                lstm_probs = st.session_state['pred_lstm_temporal']
+                lstm_df = pd.DataFrame({
+                    'Week': np.arange(1, len(lstm_probs) + 1),
+                    'HDP Probability': lstm_probs * 100  # Convert to percentage
+                })
+                
+                # Create Altair line chart
+                lstm_chart = alt.Chart(lstm_df).mark_line(point=True, color='#ff6b6b').encode(
+                    x=alt.X('Week:Q', scale=alt.Scale(domain=[0, 21])),
+                    y=alt.Y('HDP Probability:Q', scale=alt.Scale(domain=[0, 100])),
+                    tooltip=['Week:Q', alt.Tooltip('HDP Probability:Q', format='.1f')]
+                ).properties(
+                    width=700,
+                    height=350,
+                    title='Week-by-Week HDP Risk Progression'
+                )
+                
+                st.altair_chart(lstm_chart, use_container_width=True)
             
             st.markdown('---')
             st.write('### ✅ Confirm Patient Details')
